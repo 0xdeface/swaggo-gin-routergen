@@ -14,7 +14,7 @@ func main() {
 	args := os.Args[1:]
 	var handlerOwner string
 	var stripPrefix string
-	if len(args) == 1 {
+	if len(args) >= 1 {
 		handlerOwner = args[0]
 	}
 	if len(args) == 2 {
