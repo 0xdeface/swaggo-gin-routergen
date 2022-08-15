@@ -1,1 +1,2 @@
-module routerGroup
+module swaggo-gin-routergen
+
