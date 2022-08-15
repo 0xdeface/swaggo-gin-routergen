@@ -109,8 +109,8 @@ func GetRoute(route, strip string) (string, error) {
 		rt = r.ReplaceAllString(rt, ":$1")
 		if len(strip) > 0 {
 			rt = strings.TrimPrefix(rt, strip)
-			if rt == "" {
-				return "/", nil
+			if !strings.HasPrefix(rt, "/") {
+				rt = "/" + rt
 			}
 		}
 		return rt, err
