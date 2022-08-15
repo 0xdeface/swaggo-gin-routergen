@@ -13,8 +13,12 @@ import (
 func main() {
 	args := os.Args[1:]
 	var handlerOwner string
+	var stripPrefix string
 	if len(args) == 1 {
 		handlerOwner = args[0]
+	}
+	if len(args) == 2 {
+		stripPrefix = args[1]
 	}
 	targetFile := os.Getenv("GOFILE")
 	tagetPackage := os.Getenv("GOPACKAGE")
@@ -32,7 +36,7 @@ func main() {
 			}
 			for _, doc := range v.Doc.List {
 				if strings.HasPrefix(doc.Text, "// @Router") || strings.HasPrefix(doc.Text, "//@Router") {
-					result = append(result, GenLine(v.Name.Name, doc.Text, handlerOwner))
+					result = append(result, GenLine(v.Name.Name, doc.Text, handlerOwner, stripPrefix))
 				}
 			}
 		}
@@ -61,13 +65,13 @@ func Header(pkg string, owner string) []string {
 func Footer() string {
 	return "}"
 }
-func GenLine(fName string, route string, owner string) string {
+func GenLine(fName string, route string, owner string, stripPrefix string) string {
 	getHttpMethod, err := GetHttpMethod(route)
 	if err != nil {
 		fmt.Println(err)
 		return err.Error()
 	}
-	parsedRoute, err := GetRoute(route)
+	parsedRoute, err := GetRoute(route, stripPrefix)
 	if err != nil {
 		fmt.Println(err)
 		return err.Error()
@@ -90,7 +94,7 @@ func GetHttpMethod(route string) (string, error) {
 	return "", fmt.Errorf("%v parse method error", route)
 }
 
-func GetRoute(route string) (string, error) {
+func GetRoute(route, strip string) (string, error) {
 	r, err := regexp.Compile(`.*?@Router\s*(.+)\[.+?\].*?`)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -103,6 +107,12 @@ func GetRoute(route string) (string, error) {
 			return "", nil
 		}
 		rt = r.ReplaceAllString(rt, ":$1")
+		if len(strip) > 0 {
+			rt = strings.TrimPrefix(rt, strip)
+			if rt == "" {
+				return "/", nil
+			}
+		}
 		return rt, err
 	}
 	return "", nil

@@ -1,8 +1,11 @@
 # swaggo-gin-routergen
 
 Not for production. generate routes from swag annotations  
-_for install use:_ 
-**go install github.com/0xdeface/swaggo-gin-routergen@latest**
+_for install use:_
+**go install github.com/0xdeface/swaggo-gin-routergen@latest**  
+in your code //go:generate swaggo-gin-routergen owner? strip?  
+if strip preset route be stripped, it's useful for groups
+
 ```
 //go:generate swaggo-gin-routergen *HandlerProvider
 func (h *HandlerProvider) Provide(rg *gin.RouterGroup, useCases *uc.UC) {
