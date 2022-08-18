@@ -21,7 +21,7 @@ func main() {
 		stripPrefix = args[1]
 	}
 	targetFile := os.Getenv("GOFILE")
-	tagetPackage := os.Getenv("GOPACKAGE")
+	targetPackage := os.Getenv("GOPACKAGE")
 	fileSet := token.NewFileSet()
 	result := make([]string, 0)
 	node, err := parser.ParseFile(fileSet, targetFile, nil, parser.ParseComments)
@@ -43,7 +43,7 @@ func main() {
 	}
 
 	result = append(result, Footer())
-	result = append(Header(tagetPackage, handlerOwner), result...)
+	result = append(Header(targetPackage, handlerOwner), result...)
 	r := strings.Join(result, "\n")
 	err = os.WriteFile("routes_gen.go", []byte(r), 0765)
 	if err != nil {
@@ -102,7 +102,7 @@ func GetRoute(route, strip string) (string, error) {
 	result := r.FindStringSubmatch(route)
 	if len(result) == 2 {
 		rt := strings.TrimSpace(result[1])
-		r, err := regexp.Compile(`.*?{(.+)}.*?`)
+		r, err := regexp.Compile(`{(.+)}`)
 		if err != nil {
 			return "", nil
 		}
