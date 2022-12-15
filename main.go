@@ -1,35 +1,61 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
 
 func main() {
-	args := os.Args[1:]
-	var handlerOwner string
-	var stripPrefix string
-	if len(args) >= 1 {
-		handlerOwner = args[0]
-	}
-	if len(args) == 2 {
-		stripPrefix = args[1]
-	}
+	handlerParam := flag.String("owner", "", "handler owner")
+	stripParam := flag.String("strip", "", "# of iterations")
+	packageParam := flag.Bool("package", false, "")
+	flag.Parse()
+	handlerOwner := *handlerParam
+	stripPrefix := *stripParam
+	packageMode := *packageParam
+	_ = packageMode
 	targetFile := os.Getenv("GOFILE")
 	targetPackage := os.Getenv("GOPACKAGE")
 	fileSet := token.NewFileSet()
 	result := make([]string, 0)
-	node, err := parser.ParseFile(fileSet, targetFile, nil, parser.ParseComments)
+	files := make([]*ast.File, 0)
+	astFile, err := parser.ParseFile(fileSet, targetFile, nil, parser.ParseComments)
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		panic(err)
 	}
-	for _, decl := range node.Decls {
+	if packageMode {
+		dir := filepath.Dir(targetFile)
+		astPackageMap, _ := parser.ParseDir(fileSet, dir, nil, parser.ParseComments)
+		for _, v := range astPackageMap {
+			for _, f := range v.Files {
+				files = append(files, f)
+			}
+		}
+	} else {
+		files = append(files, astFile)
+	}
+	for _, file := range files {
+		fileContent := parseFile(file, handlerOwner, stripPrefix)
+		result = append(result, fileContent...)
+	}
+
+	result = append(result, Footer())
+	result = append(Header(targetPackage, handlerOwner), result...)
+	r := strings.Join(result, "\n")
+	err = os.WriteFile("routes_gen.go", []byte(r), 0765)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+func parseFile(f *ast.File, handlerOwner, stripPrefix string) (result []string) {
+	for _, decl := range f.Decls {
 		if v, ok := decl.(*ast.FuncDecl); ok {
 			if v.Doc == nil {
 				continue
@@ -41,15 +67,9 @@ func main() {
 			}
 		}
 	}
-
-	result = append(result, Footer())
-	result = append(Header(targetPackage, handlerOwner), result...)
-	r := strings.Join(result, "\n")
-	err = os.WriteFile("routes_gen.go", []byte(r), 0765)
-	if err != nil {
-		fmt.Println(err)
-	}
+	return
 }
+
 func Header(pkg string, owner string) []string {
 	result := make([]string, 4)
 	result[0] = "package " + pkg
